@@ -1,7 +1,7 @@
 package rest
 
 type Expression struct {
-	ID     string  `json:"ID"`
+	ID     string  `json:"id"`
 	Status string  `json:"status"`
 	Result float64 `json:"result,omitempty"`
 	Reason string  `json:"reason,omitempty"`
