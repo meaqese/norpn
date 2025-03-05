@@ -3,7 +3,7 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/meaqese/norpn/pkg/norpn"
+	"github.com/meaqese/norpn/internal/orch/norpn"
 	"net/http/httptest"
 	"strings"
 	"testing"
