@@ -16,6 +16,18 @@
 
 ---
 
+## Архитектура
+
+```mermaid
+graph TD
+    U[Пользователь] -->|POST /api/v1/calculate| O[Оркестратор]
+    U -->|GET /expressions| O
+    O -->|GET /internal/task| A[Агенты]
+    A -->|POST /internal/task| O
+```
+
+---
+
 ## Установка и запуск
 
 ### Шаг 1: Клонировать репозиторий
