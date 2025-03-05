@@ -3,14 +3,11 @@ const API_DOMAIN = `localhost:8080`;
 const expressionInput = document.querySelector(`.form__input`);
 const resultInfoTextarea = document.querySelector(`.result`);
 
-let rowsCount = 1;
 
 const addInfo = (info) => {
     resultInfoTextarea.style.opacity = `1`;
     resultInfoTextarea.textContent += info + `\r\n`;
     resultInfoTextarea.style.height = resultInfoTextarea.scrollHeight + `px`;
-
-    resultInfoTextarea.setAttribute(`rows`, rowsCount.toString());
 };
 
 const handleFormSubmit = async (evt) => {
