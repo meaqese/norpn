@@ -89,7 +89,11 @@ func (c *Core) HandleTask(w http.ResponseWriter, r *http.Request) {
 		}
 		defer r.Body.Close()
 
-		*c.calculator.TaskResultChannels[taskResult.ID] <- taskResult.Result
+		if ch, ok := c.calculator.TaskResultChannels[taskResult.ID]; ok {
+			*ch <- taskResult.Result
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}

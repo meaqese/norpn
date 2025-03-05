@@ -154,11 +154,18 @@ func (c *Calculator) solve(valuesStack []float64, operatorsStack []rune) ([]floa
 		OperationTime: c.getOperationTime(lastOperator),
 	})
 
+	c.Mu.Lock()
+	channel := c.TaskResultChannels[id]
+	c.Mu.Unlock()
+
 	select {
-	case result := <-*c.TaskResultChannels[id]:
+	case result := <-*channel:
 		valuesStack = append(valuesStack, result)
-		close(*c.TaskResultChannels[id])
+		close(*channel)
+
+		c.Mu.Lock()
 		delete(c.TaskResultChannels, id)
+		c.Mu.Unlock()
 	case <-time.After(300 * time.Second):
 		return valuesStack, operatorsStack, errors.New("timeout error")
 	}
