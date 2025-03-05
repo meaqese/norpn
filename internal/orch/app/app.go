@@ -22,12 +22,16 @@ func (o *Orch) Run() {
 
 	handler := rest.New(o.config)
 
+	fs := http.FileServer(http.Dir("./web"))
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/calculate", handler.HandleExpression)
-	mux.HandleFunc("/api/v1/expressions/{id}", handler.HandleGetExpression)
-	mux.HandleFunc("/api/v1/expressions", handler.HandleGetExpressions)
+	mux.HandleFunc("/api/v1/calculate", handler.Cors(handler.HandleExpression))
+	mux.HandleFunc("/api/v1/expressions/{id}", handler.Cors(handler.HandleGetExpression))
+	mux.HandleFunc("/api/v1/expressions", handler.Cors(handler.HandleGetExpressions))
 
 	mux.HandleFunc("/internal/task", handler.HandleTask)
+
+	mux.Handle("/", fs)
 
 	log.Println("Orchestrator server started on " + addr)
 	http.ListenAndServe(addr, mux)

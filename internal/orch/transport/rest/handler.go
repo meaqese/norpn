@@ -6,6 +6,20 @@ import (
 	"net/http"
 )
 
+func (c *Core) Cors(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		if r.Method == http.MethodOptions {
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+}
+
 func (c *Core) HandleExpression(w http.ResponseWriter, r *http.Request) {
 	requestData := &RequestExpression{}
 	encoder := json.NewEncoder(w)
