@@ -29,24 +29,25 @@ const handleFormSubmit = async (evt) => {
 
     expressionInput.disabled = true;
 
-    await checkResults(data.id);
-
-    expressionInput.disabled = false;
+    const interval = setInterval(async () => {
+        await checkResults(data.id, interval);
+    }, 1000);
 };
 
-const checkResults = async (id) => {
-    while (true) {
-        const response = await fetch(`http://${API_DOMAIN}/api/v1/expressions/${id}`);
+const checkResults = async (id, interval) => {
+    const response = await fetch(`http://${API_DOMAIN}/api/v1/expressions/${id}`);
 
-        const data = await response.json();
+    const data = await response.json();
 
-        if (data.status === `completed`) {
-            addInfo(`Result: ${data.result}\n`);
-            break;
-        } else if (data.status === `error`) {
-            addInfo(`Error: ${data.reason}\n`);
-            break;
-        }
+    if (data.status === `completed`) {
+        addInfo(`Result: ${data.result}\n`);
+    } else if (data.status === `error`) {
+        addInfo(`Error: ${data.reason}\n`);
+    }
+
+    if (data.status !== `processing`) {
+        clearInterval(interval);
+        expressionInput.disabled = false;
     }
 }
 

@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"github.com/meaqese/norpn/internal/orch/norpn"
+	"log"
 	"net/http"
 )
 
@@ -43,6 +44,7 @@ func (c *Core) HandleExpression(w http.ResponseWriter, r *http.Request) {
 		go c.StartCalc(requestData.Expression, hashOfExpression)
 	}
 
+	log.Printf("Received expression: '%s'", requestData.Expression)
 	w.WriteHeader(http.StatusCreated)
 	encoder.Encode(ResponseExpression{ID: hashOfExpression})
 }
@@ -92,6 +94,7 @@ func (c *Core) HandleTask(w http.ResponseWriter, r *http.Request) {
 		}
 
 		encoder.Encode(task)
+		log.Printf("Dequeue task %s from store", task.ID)
 	} else if r.Method == "POST" {
 		c.calculator.Mu.Lock()
 		defer c.calculator.Mu.Unlock()
@@ -105,6 +108,7 @@ func (c *Core) HandleTask(w http.ResponseWriter, r *http.Request) {
 
 		if ch, ok := c.calculator.TaskResultChannels[taskResult.ID]; ok {
 			*ch <- taskResult.Result
+			log.Printf("Received solve for task %s", taskResult.ID)
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
