@@ -104,7 +104,7 @@ func addingExpression(tc norpn.TestCase, t *testing.T, core *rest.Core) {
 			t.Fatal(err)
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(time.Duration(tc.TimeoutSeconds) * time.Second)
 
 		expression := getExpression(core, resResult.ID)
 
@@ -134,6 +134,7 @@ func TestCalcHandler(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
 			addingExpression(tc, t, core)
 		})
 	}
