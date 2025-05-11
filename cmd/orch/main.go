@@ -6,5 +6,8 @@ import (
 
 func main() {
 	application := orch.New()
-	application.Run()
+	err := application.Run()
+	if err != nil {
+		panic(err)
+	}
 }

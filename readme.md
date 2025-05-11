@@ -36,7 +36,7 @@ graph TD
 
 ```bash
 git clone https://github.com/meaqese/norpn.git
-cd norpn
+cd services
 ```
 
 ### Шаг 2: Запуск приложения

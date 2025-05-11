@@ -1,4 +1,4 @@
-package norpn
+package services
 
 type TestCase struct {
 	Name           string

@@ -2,7 +2,6 @@ package rest
 
 import (
 	"encoding/json"
-	"github.com/meaqese/norpn/internal/orch/norpn"
 	"log"
 	"net/http"
 )
@@ -32,55 +31,51 @@ func (c *Core) HandleExpression(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashOfExpression := c.GenerateHash(requestData.Expression)
-
-	c.mu.Lock()
-	_, found := c.expressionStore[hashOfExpression]
-	c.mu.Unlock()
-
-	if !found {
-		c.AddExpression(hashOfExpression)
-
-		go c.StartCalc(requestData.Expression, hashOfExpression)
-	}
-
-	log.Printf("Received expression: '%s'", requestData.Expression)
-	w.WriteHeader(http.StatusCreated)
-	encoder.Encode(ResponseExpression{ID: hashOfExpression})
-}
-
-func (c *Core) HandleGetExpressions(w http.ResponseWriter, r *http.Request) {
-	encoder := json.NewEncoder(w)
-
-	var expressions []*Expression
-	c.mu.Lock()
-	for _, val := range c.expressionStore {
-		expressions = append(expressions, val)
-	}
-	c.mu.Unlock()
-
-	encoder.Encode(ResponseExpressions{Expressions: expressions})
-}
-
-func (c *Core) HandleGetExpression(w http.ResponseWriter, r *http.Request) {
-	encoder := json.NewEncoder(w)
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	id := r.PathValue("id")
-	if id == "" {
+	expressionID, err := c.calculator.RegisterExpression(requestData.Expression)
+	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	if val, ok := c.expressionStore[id]; ok {
-		encoder.Encode(val)
-		return
-	}
+	go c.calculator.StartCalc(expressionID, requestData.Expression)
 
-	w.WriteHeader(http.StatusNotFound)
+	log.Printf("Received expression: '%s'", requestData.Expression)
+	w.WriteHeader(http.StatusCreated)
+	encoder.Encode(ResponseExpression{ID: expressionID})
 }
+
+//func (c *Core) HandleGetExpressions(w http.ResponseWriter, r *http.Request) {
+//	encoder := json.NewEncoder(w)
+//
+//	var expressions []*Expression
+//	c.mu.Lock()
+//	for _, val := range c.expressionStore {
+//		expressions = append(expressions, val)
+//	}
+//	c.mu.Unlock()
+//
+//	encoder.Encode(ResponseExpressions{Expressions: expressions})
+//}
+//
+//func (c *Core) HandleGetExpression(w http.ResponseWriter, r *http.Request) {
+//	encoder := json.NewEncoder(w)
+//
+//	c.mu.Lock()
+//	defer c.mu.Unlock()
+//
+//	id := r.PathValue("id")
+//	if id == "" {
+//		w.WriteHeader(http.StatusUnprocessableEntity)
+//		return
+//	}
+//
+//	if val, ok := c.expressionStore[id]; ok {
+//		encoder.Encode(val)
+//		return
+//	}
+//
+//	w.WriteHeader(http.StatusNotFound)
+//}
 
 func (c *Core) HandleTask(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
@@ -96,17 +91,14 @@ func (c *Core) HandleTask(w http.ResponseWriter, r *http.Request) {
 		encoder.Encode(task)
 		log.Printf("Dequeue task %s from store", task.ID)
 	} else if r.Method == "POST" {
-		c.calculator.Mu.Lock()
-		defer c.calculator.Mu.Unlock()
-
-		taskResult := &norpn.TaskResult{}
+		taskResult := &TaskResult{}
 		err := json.NewDecoder(r.Body).Decode(taskResult)
 		if err != nil {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 		}
 		defer r.Body.Close()
 
-		if ch, ok := c.calculator.TaskResultChannels[taskResult.ID]; ok {
+		if ch, ok := c.calculator.GetChannelByID(taskResult.ID); ok {
 			*ch <- taskResult.Result
 			log.Printf("Received solve for task %s", taskResult.ID)
 		} else {

@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/meaqese/norpn/internal/orch/norpn"
+	"github.com/meaqese/norpn/internal/orch/domain"
+	"github.com/meaqese/norpn/internal/orch/transport/rest"
 	"log"
 	"net/http"
 	"time"
 )
 
 func sendResult(id string, result float64) {
-	data, _ := json.Marshal(norpn.TaskResult{ID: id, Result: result})
+	data, _ := json.Marshal(rest.TaskResult{ID: id, Result: result})
 	dataReader := bytes.NewReader(data)
 
 	log.Printf("Solved task ID: %s = %f", id, result)
@@ -30,7 +31,7 @@ func StartWorker() {
 			continue
 		}
 
-		task := &norpn.Task{}
+		task := &domain.Task{}
 		err = json.NewDecoder(resp.Body).Decode(task)
 		if err != nil {
 			log.Println(err)

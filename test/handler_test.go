@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	conf "github.com/meaqese/norpn/internal/orch/config"
-	"github.com/meaqese/norpn/internal/orch/norpn"
+	"github.com/meaqese/norpn/internal/orch/services"
 	"github.com/meaqese/norpn/internal/orch/transport/rest"
 	"log"
 	"net/http/httptest"
@@ -18,7 +18,7 @@ const ApiEndpoint = "http://norpn.io"
 func sendResult(core *rest.Core, id string, result float64) {
 	var buf bytes.Buffer
 
-	json.NewEncoder(&buf).Encode(norpn.TaskResult{
+	json.NewEncoder(&buf).Encode(services.TaskResult{
 		ID:     id,
 		Result: result,
 	})
@@ -44,7 +44,7 @@ func worker(core *rest.Core) {
 			continue
 		}
 
-		task := &norpn.Task{}
+		task := &services.Task{}
 		err := json.NewDecoder(resp.Body).Decode(task)
 		resp.Body.Close()
 		if err != nil {
@@ -81,7 +81,7 @@ func getExpression(core *rest.Core, id string) rest.Expression {
 	return expResult
 }
 
-func addingExpression(tc norpn.TestCase, t *testing.T, core *rest.Core) {
+func addingExpression(tc services.TestCase, t *testing.T, core *rest.Core) {
 	var buffer bytes.Buffer
 	err := json.NewEncoder(&buffer).Encode(rest.RequestExpression{Expression: tc.Expression})
 	if err != nil {
@@ -121,7 +121,7 @@ func addingExpression(tc norpn.TestCase, t *testing.T, core *rest.Core) {
 }
 
 func TestCalcHandler(t *testing.T) {
-	cases := norpn.GetTestCases()
+	cases := services.GetTestCases()
 
 	core := rest.New(&conf.Config{
 		TimeAdditionMs:        0,

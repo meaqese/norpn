@@ -1,93 +1,77 @@
-package norpn
+package services
 
 import (
 	"errors"
 	"fmt"
-	conf "github.com/meaqese/norpn/internal/orch/config"
-	"math/rand"
+	"github.com/meaqese/norpn/internal/orch/domain"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 )
 
-type Task struct {
-	ID            string  `json:"id"`
-	Arg1          float64 `json:"arg1"`
-	Arg2          float64 `json:"arg2"`
-	Operation     rune    `json:"operation"`
-	OperationTime int     `json:"operation_time"`
-}
-
-type TaskResult struct {
-	ID     string  `json:"id"`
-	Result float64 `json:"result"`
-}
-
 type Calculator struct {
-	Mu     *sync.Mutex
-	config *conf.Config
-
-	TaskQueue          []*Task
-	TaskResultChannels map[string]*chan float64
-
-	TestMode bool
+	tasks       domain.TaskRepository
+	expressions domain.ExpressionRepository
+	CalcOptions
 }
 
-func New(config *conf.Config) *Calculator {
+type CalcOptions struct {
+	TimeAdditionMs        int
+	TimeSubtractionMs     int
+	TimeMultiplicationsMs int
+	TimeDivisionsMs       int
+}
+
+func New(
+	taskRepo domain.TaskRepository,
+	expressionRepo domain.ExpressionRepository,
+	options CalcOptions,
+) *Calculator {
 	return &Calculator{
-		TaskQueue:          make([]*Task, 0),
-		TaskResultChannels: make(map[string]*chan float64),
-		Mu:                 &sync.Mutex{},
-		config:             config,
-		TestMode:           false,
+		tasks:       taskRepo,
+		expressions: expressionRepo,
+		CalcOptions: options,
 	}
 }
 
-func (c *Calculator) DequeueTask() *Task {
-	c.Mu.Lock()
-	defer c.Mu.Unlock()
-	if len(c.TaskQueue) > 0 {
-		task := c.TaskQueue[0]
-		c.TaskQueue = c.TaskQueue[1:]
-
-		return task
+func (c *Calculator) RegisterExpression(expression string) (int64, error) {
+	exp, err := c.expressions.Add(domain.Expression{Expression: expression})
+	if err != nil {
+		return 0, err
 	}
-	return nil
+
+	return exp, nil
 }
 
-func (c *Calculator) EnqueueTask(task *Task) {
-	c.Mu.Lock()
-	defer c.Mu.Unlock()
+func (c *Calculator) StartCalc(expressionID int64, expression string) {
+	result, err := c.calc(expression)
+	if err != nil {
+		c.expressions.Update(domain.Expression{ID: expressionID, Status: "error", Result: 0, Reason: err.Error()})
+		return
+	}
 
-	c.TaskQueue = append(c.TaskQueue, task)
-
-	channel := make(chan float64, 1)
-	c.TaskResultChannels[task.ID] = &channel
+	c.expressions.Update(domain.Expression{ID: expressionID, Status: "completed", Result: result})
 }
 
-func (c *Calculator) generateID() string {
-	c.Mu.Lock()
-	defer c.Mu.Unlock()
-	for {
-		generatedID := strconv.FormatInt(rand.Int63(), 10)
-		if _, ok := c.TaskResultChannels[generatedID]; !ok {
-			return generatedID
-		}
-	}
+func (c *Calculator) DequeueTask() *domain.Task {
+	return c.tasks.Dequeue()
+}
+
+func (c *Calculator) GetChannelByID(id string) (*chan float64, bool) {
+	return c.tasks.GetChannelByID(id)
 }
 
 func (c *Calculator) getOperationTime(operator rune) int {
 	switch operator {
 	case '+':
-		return c.config.TimeAdditionMs
+		return c.TimeAdditionMs
 	case '-':
-		return c.config.TimeSubtractionMs
+		return c.TimeSubtractionMs
 	case '*':
-		return c.config.TimeMultiplicationsMs
+		return c.TimeMultiplicationsMs
 	case '/':
-		return c.config.TimeDivisionsMs
+		return c.TimeDivisionsMs
 	}
 
 	return 0
@@ -144,9 +128,9 @@ func (c *Calculator) solve(valuesStack []float64, operatorsStack []rune) ([]floa
 		return valuesStack, operatorsStack, errors.New("division to 0")
 	}
 
-	id := c.generateID()
+	id := c.tasks.GenerateID()
 
-	c.EnqueueTask(&Task{
+	c.tasks.Enqueue(&domain.Task{
 		ID:            id,
 		Arg1:          val1,
 		Arg2:          val2,
@@ -154,18 +138,14 @@ func (c *Calculator) solve(valuesStack []float64, operatorsStack []rune) ([]floa
 		OperationTime: c.getOperationTime(lastOperator),
 	})
 
-	c.Mu.Lock()
-	channel := c.TaskResultChannels[id]
-	c.Mu.Unlock()
+	channel, _ := c.tasks.GetChannelByID(id)
 
 	select {
 	case result := <-*channel:
 		valuesStack = append(valuesStack, result)
 		close(*channel)
 
-		c.Mu.Lock()
-		delete(c.TaskResultChannels, id)
-		c.Mu.Unlock()
+		c.tasks.RemoveChannelByID(id)
 	case <-time.After(300 * time.Second):
 		return valuesStack, operatorsStack, errors.New("timeout error")
 	}
@@ -222,7 +202,7 @@ func (c *Calculator) solveSimpleExpression(expression string) (string, error) {
 	return fmt.Sprintf("%f", valuesStack[0]), nil
 }
 
-func (c *Calculator) Calc(expression string) (float64, error) {
+func (c *Calculator) calc(expression string) (float64, error) {
 	expression = strings.Replace(expression, " ", "", -1)
 
 	rechecks := 1
