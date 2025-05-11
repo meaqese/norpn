@@ -31,7 +31,7 @@ func (o *Orch) Run() error {
 		return err
 	}
 
-	_, err = sqlite.NewUserRepo(db)
+	userRepo, err := sqlite.NewUserRepo(db)
 	if err != nil {
 		return err
 	}
@@ -43,28 +43,19 @@ func (o *Orch) Run() error {
 
 	taskRepo := memory.NewTaskRepo()
 
-	calc := services.New(taskRepo, expressionRepo, services.CalcOptions{
+	calcSvc := services.New(taskRepo, expressionRepo, services.CalcOptions{
 		TimeAdditionMs:        o.config.TimeAdditionMs,
 		TimeSubtractionMs:     o.config.TimeSubtractionMs,
 		TimeMultiplicationsMs: o.config.TimeMultiplicationsMs,
 		TimeDivisionsMs:       o.config.TimeDivisionsMs,
 	})
 
-	handler := rest.New(calc)
+	authSrv := services.NewAuth(userRepo, o.config.JWTSecret)
 
-	fs := http.FileServer(http.Dir("./web"))
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/calculate", handler.Cors(handler.HandleExpression))
-	//mux.HandleFunc("/api/v1/expressions/{id}", handler.Cors(handler.HandleGetExpression))
-	//mux.HandleFunc("/api/v1/expressions", handler.Cors(handler.HandleGetExpressions))
-
-	mux.HandleFunc("/internal/task", handler.HandleTask)
-
-	mux.Handle("/", fs)
+	handler := rest.New(calcSvc, authSrv)
 
 	log.Println("Orchestrator server started on " + addr)
-	http.ListenAndServe(addr, mux)
+	http.ListenAndServe(addr, handler)
 
 	return nil
 }

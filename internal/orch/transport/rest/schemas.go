@@ -1,8 +1,14 @@
 package rest
 
-type User struct {
+type RequestUser struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
+}
+
+type ResponseUser struct {
+	Status   string `json:"status"`
+	Error    string `json:"error,omitempty"`
+	JWTToken string `json:"jwt_token,omitempty"`
 }
 
 type Expression struct {

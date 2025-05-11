@@ -6,7 +6,29 @@ import (
 )
 
 type ExpressionModel struct {
-	domain.Expression
+	ID         int64
+	Expression string
+	Status     string
+	Result     sql.NullFloat64
+	Reason     sql.NullString
+	UserID     int64
+}
+
+func (em ExpressionModel) toDomain() *domain.Expression {
+	exp := &domain.Expression{
+		ID: em.ID, Expression: em.Expression,
+		Status: em.Status, UserID: em.UserID,
+	}
+
+	if em.Result.Valid {
+		exp.Result = em.Result.Float64
+	}
+
+	if em.Reason.Valid {
+		exp.Reason = em.Reason.String
+	}
+
+	return exp
 }
 
 type ExpressionRepo struct {
@@ -60,4 +82,38 @@ func (e *ExpressionRepo) Update(expression domain.Expression) error {
 	}
 
 	return nil
+}
+
+func (e *ExpressionRepo) GetById(id int64) (*domain.Expression, error) {
+	q := "SELECT id, expression, status, result, reason, user_id FROM expressions WHERE id = $1"
+
+	exp := ExpressionModel{}
+	err := e.db.QueryRow(q, id).Scan(&exp.ID, &exp.Expression, &exp.Status, &exp.Result, &exp.Reason, &exp.UserID)
+	if err != nil {
+		return &domain.Expression{}, err
+	}
+
+	return exp.toDomain(), nil
+}
+
+func (e *ExpressionRepo) GetAll(userId int64) ([]*domain.Expression, error) {
+	q := "SELECT id, expression, status, result, reason, user_id FROM expressions WHERE user_id = $1"
+
+	var expressions []*domain.Expression
+	rows, err := e.db.Query(q, userId)
+	if err != nil {
+		return expressions, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		exp := ExpressionModel{}
+		err = rows.Scan(&exp.ID, &exp.Expression, &exp.Status, &exp.Result, &exp.Reason, &exp.UserID)
+		if err != nil {
+			return expressions, err
+		}
+		expressions = append(expressions, exp.toDomain())
+	}
+
+	return expressions, nil
 }

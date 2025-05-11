@@ -1,13 +1,15 @@
 package domain
 
 type UserRepository interface {
-	Add() (int64, error)
-	GetByLogin()
+	Add(user User) (int64, error)
+	GetByLogin(login string) (User, error)
 }
 
 type ExpressionRepository interface {
 	Add(expression Expression) (int64, error)
 	Update(expression Expression) error
+	GetById(id int64) (*Expression, error)
+	GetAll(userId int64) ([]*Expression, error)
 }
 
 type TaskRepository interface {

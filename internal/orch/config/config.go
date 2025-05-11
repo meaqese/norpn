@@ -8,6 +8,8 @@ import (
 type Config struct {
 	Port string
 
+	JWTSecret string
+
 	TimeAdditionMs        int
 	TimeSubtractionMs     int
 	TimeMultiplicationsMs int
@@ -25,6 +27,8 @@ func getEnvDefault(key, fallback string) string {
 func FromEnv() *Config {
 	config := &Config{}
 	config.Port = getEnvDefault("PORT", "8080")
+
+	config.JWTSecret = getEnvDefault("JWT_SECRET", "mysupersecret")
 
 	config.TimeAdditionMs, _ = strconv.Atoi(getEnvDefault("TIME_ADDITION_MS", "1000"))
 	config.TimeSubtractionMs, _ = strconv.Atoi(getEnvDefault("TIME_SUBTRACTION_MS", "1000"))

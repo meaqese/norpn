@@ -11,8 +11,8 @@ type UserModel struct {
 	domain.User
 }
 
-func (u UserModel) generateHashOfPassword() (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+func generateHashOfPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
@@ -43,10 +43,10 @@ func NewUserRepo(db *sql.DB) (*UserRepo, error) {
 	return repo, nil
 }
 
-func (ur *UserRepo) Add(user UserModel) (int64, error) {
-	q := "INSERT INTO user (login, password) VALUES ($1, $2)"
+func (ur *UserRepo) Add(user domain.User) (int64, error) {
+	q := "INSERT INTO users (login, password) VALUES ($1, $2)"
 
-	passwordHash, err := user.generateHashOfPassword()
+	passwordHash, err := generateHashOfPassword(user.Password)
 	if err != nil {
 		return 0, err
 	}
@@ -64,11 +64,11 @@ func (ur *UserRepo) Add(user UserModel) (int64, error) {
 	return id, nil
 }
 
-func (ur *UserRepo) GetByLogin(login string) (UserModel, error) {
-	var user UserModel
+func (ur *UserRepo) GetByLogin(login string) (domain.User, error) {
+	var user domain.User
 
 	q := "SELECT id, login, password FROM users WHERE login = $1"
-	err := ur.db.QueryRow(q, login).Scan(user.ID, user.Login, user.Password)
+	err := ur.db.QueryRow(q, login).Scan(&user.ID, &user.Login, &user.Password)
 	if err != nil {
 		return user, err
 	}

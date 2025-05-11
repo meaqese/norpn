@@ -35,8 +35,8 @@ func New(
 	}
 }
 
-func (c *Calculator) RegisterExpression(expression string) (int64, error) {
-	exp, err := c.expressions.Add(domain.Expression{Expression: expression})
+func (c *Calculator) RegisterExpression(expression string, userId int64) (int64, error) {
+	exp, err := c.expressions.Add(domain.Expression{Expression: expression, UserID: userId})
 	if err != nil {
 		return 0, err
 	}
@@ -60,6 +60,14 @@ func (c *Calculator) DequeueTask() *domain.Task {
 
 func (c *Calculator) GetChannelByID(id string) (*chan float64, bool) {
 	return c.tasks.GetChannelByID(id)
+}
+
+func (c *Calculator) GetExpressionById(id int64) (*domain.Expression, error) {
+	return c.expressions.GetById(id)
+}
+
+func (c *Calculator) GetAllExpressions(userID int64) ([]*domain.Expression, error) {
+	return c.expressions.GetAll(userID)
 }
 
 func (c *Calculator) getOperationTime(operator rune) int {
