@@ -24,7 +24,6 @@ func New(calculator *services.Calculator, auth *services.AuthService) *http.Serv
 	mux.HandleFunc("/api/v1/login", cors(handler.Login))
 	mux.HandleFunc("/api/v1/expressions/{id}", cors(withAuth(auth, handler.HandleGetExpression)))
 	mux.HandleFunc("/api/v1/expressions", cors(withAuth(auth, handler.HandleGetExpressions)))
-	mux.HandleFunc("/internal/task", handler.HandleTask)
 	mux.Handle("/", fs)
 
 	return mux

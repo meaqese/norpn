@@ -6,7 +6,7 @@ type RequestUser struct {
 }
 
 type ResponseUser struct {
-	Status   string `json:"status"`
+	Status   bool   `json:"status"`
 	Error    string `json:"error,omitempty"`
 	JWTToken string `json:"jwt_token,omitempty"`
 }

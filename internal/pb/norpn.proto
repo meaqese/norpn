@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package norpn;
+option go_package = "github.com/meaqese/norpn/internal/pb";
+
+message Empty {}
+
+message TaskResponse {
+  string ID = 1;
+  float Arg1 = 2;
+  float Arg2 = 3;
+  int32 Operation = 4;
+  int32 OperationTime = 5;
+}
+
+message TaskResult {
+  string ID = 1;
+  float Result = 2;
+}
+
+service OrchService {
+  rpc GetTask(Empty) returns (TaskResponse);
+  rpc SendTaskResult(TaskResult) returns (Empty);
+}
+

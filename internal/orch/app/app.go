@@ -6,9 +6,15 @@ import (
 	memory "github.com/meaqese/norpn/internal/orch/repository/memory"
 	sqlite "github.com/meaqese/norpn/internal/orch/repository/sqlite"
 	"github.com/meaqese/norpn/internal/orch/services"
+	grpcServerHandler "github.com/meaqese/norpn/internal/orch/transport/grpc"
 	"github.com/meaqese/norpn/internal/orch/transport/rest"
+	"github.com/meaqese/norpn/internal/pb"
+	"google.golang.org/grpc"
 	"log"
+	"net"
 	"net/http"
+	"os"
+	"os/signal"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -54,8 +60,28 @@ func (o *Orch) Run() error {
 
 	handler := rest.New(calcSvc, authSrv)
 
+	grpcAddr := "localhost:" + o.config.GRPCPort
+	lis, err := net.Listen("tcp", grpcAddr)
+	if err != nil {
+		return err
+	}
+
+	grpcHandler := grpcServerHandler.New(calcSvc)
+	grpcServer := grpc.NewServer()
+
+	pb.RegisterOrchServiceServer(grpcServer, grpcHandler)
+
 	log.Println("Orchestrator server started on " + addr)
-	http.ListenAndServe(addr, handler)
+	log.Println("Orchestrator gRPC server started on " + grpcAddr)
+	go http.ListenAndServe(addr, handler)
+	go grpcServer.Serve(lis)
+
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt)
+
+	<-ch
+
+	grpcServer.GracefulStop()
 
 	return nil
 }

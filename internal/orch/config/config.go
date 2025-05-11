@@ -6,7 +6,8 @@ import (
 )
 
 type Config struct {
-	Port string
+	Port     string
+	GRPCPort string
 
 	JWTSecret string
 
@@ -27,6 +28,7 @@ func getEnvDefault(key, fallback string) string {
 func FromEnv() *Config {
 	config := &Config{}
 	config.Port = getEnvDefault("PORT", "8080")
+	config.GRPCPort = getEnvDefault("GRPC_PORT", "9090")
 
 	config.JWTSecret = getEnvDefault("JWT_SECRET", "mysupersecret")
 
