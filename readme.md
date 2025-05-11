@@ -22,8 +22,10 @@
 graph TD
     U[Пользователь] -->|POST /api/v1/calculate| O[Оркестратор]
     U -->|GET /expressions| O
-    O -->|gRPC (getTask)| A[Агенты]
-    A -->|gRPC (sendResult)| O
+    U -->|POST /register | O
+    U -->|POST /login | O
+    A[Агенты] -->|gRPC getTask| O
+    A -->|gRPC sendResult| O
 ```
 
 ---
