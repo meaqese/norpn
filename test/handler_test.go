@@ -2,9 +2,12 @@ package test
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	conf "github.com/meaqese/norpn/internal/orch/config"
+	memory "github.com/meaqese/norpn/internal/orch/repository/memory"
+	sqlite "github.com/meaqese/norpn/internal/orch/repository/sqlite"
 	"github.com/meaqese/norpn/internal/orch/services"
 	"github.com/meaqese/norpn/internal/orch/transport/rest"
 	"log"
@@ -123,12 +126,20 @@ func addingExpression(tc services.TestCase, t *testing.T, core *rest.Core) {
 func TestCalcHandler(t *testing.T) {
 	cases := services.GetTestCases()
 
-	core := rest.New(&conf.Config{
+	db, _ := sql.Open("sqlite3", ":memory:")
+
+	taskRepo := memory.NewTaskRepo()
+	userRepo, _ := sqlite.NewUserRepo(db)
+	expressionRepo, _ := sqlite.NewExpressionRepo(db)
+
+	calcSvc := services.New(taskRepo, expressionRepo, services.CalcOptions{
 		TimeAdditionMs:        0,
 		TimeSubtractionMs:     0,
 		TimeMultiplicationsMs: 0,
 		TimeDivisionsMs:       0,
 	})
+
+	core := rest.New(calcSvc)
 
 	go worker(core)
 

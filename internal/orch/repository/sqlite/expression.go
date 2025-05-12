@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/meaqese/norpn/internal/orch/domain"
 )
 
@@ -60,6 +61,10 @@ func NewExpressionRepo(db *sql.DB) (*ExpressionRepo, error) {
 }
 
 func (e *ExpressionRepo) Add(expression domain.Expression) (int64, error) {
+	if expression.UserID < 1 {
+		return 0, errors.New("user id must be greater than zero")
+	}
+
 	query := "INSERT INTO expressions (expression, status, user_id) VALUES ($1, $2, $3)"
 	result, err := e.db.Exec(query, expression.Expression, "processing", expression.UserID)
 	if err != nil {
