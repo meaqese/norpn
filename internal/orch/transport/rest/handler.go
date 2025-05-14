@@ -79,7 +79,7 @@ func (c *Core) HandleExpression(w http.ResponseWriter, r *http.Request) {
 
 	expressionID, err := c.calculator.RegisterExpression(requestData.Expression, userId)
 	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 

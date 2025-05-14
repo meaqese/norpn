@@ -58,7 +58,7 @@ func (o *Orch) Run() error {
 
 	authSrv := services.NewAuth(userRepo, o.config.JWTSecret)
 
-	handler := rest.New(calcSvc, authSrv)
+	handler, _ := rest.New(calcSvc, authSrv)
 
 	grpcAddr := "localhost:" + o.config.GRPCPort
 	lis, err := net.Listen("tcp", grpcAddr)

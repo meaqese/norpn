@@ -10,7 +10,7 @@ type Core struct {
 	auth       *services.AuthService
 }
 
-func New(calculator *services.Calculator, auth *services.AuthService) *http.ServeMux {
+func New(calculator *services.Calculator, auth *services.AuthService) (*http.ServeMux, *Core) {
 	handler := &Core{
 		calculator: calculator,
 		auth:       auth,
@@ -26,5 +26,5 @@ func New(calculator *services.Calculator, auth *services.AuthService) *http.Serv
 	mux.HandleFunc("/api/v1/expressions", cors(withAuth(auth, handler.HandleGetExpressions)))
 	mux.Handle("/", fs)
 
-	return mux
+	return mux, handler
 }
